@@ -124,12 +124,10 @@ export default function LoginPage() {
 
       <div className="max-w-md w-full space-y-8">
         <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-primary">
-            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 11-4 0v-6m4 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-            </svg>
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-lg overflow-hidden bg-white border border-border mb-4">
+            <img src="/assets/images/logo1.jpeg" alt="bidr" className="h-16 w-16 object-cover" />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
 Sign in to bidr
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">

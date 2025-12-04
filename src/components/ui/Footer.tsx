@@ -14,8 +14,8 @@ export default function Footer() {
           {/* Company Info */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Icon name="Gavel" size={20} color="white" />
+              <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-white border border-border">
+                <img src="/assets/images/logo1.jpeg" alt="bidr" className="h-8 w-8 object-cover" />
               </div>
               <span className="text-xl font-bold text-foreground">bidr</span>
             </div>
