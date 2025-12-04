@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { createClient } from '../lib/supabase-browser';
+import Loading from '../components/ui/Loading';
 
 const supabase = createClient();
 
@@ -60,13 +61,10 @@ export default function HomePage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          {status === 'redirecting' ? 'Taking you to your dashboard...' : 'Loading bidr...'}
-        </h1>
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
-      </div>
-    </div>
+    <Loading 
+      message={status === 'redirecting' ? 'Taking you to your dashboard...' : 'Loading bidr...'} 
+      fullScreen={true} 
+      size="md" 
+    />
   );
 }

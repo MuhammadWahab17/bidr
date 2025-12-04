@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useAuth } from "../../contexts/AuthContext";
@@ -9,6 +9,7 @@ import Button from "../../components/ui/Button";
 import BidcoinSummaryCard from "../../components/BidcoinSummaryCard";
 import ReferralCard from "../../components/ReferralCard";
 import Image from "../../components/AppImage";
+import Loading from "../../components/ui/Loading";
 
 interface Auction {
   id: string;
@@ -53,9 +54,27 @@ export default function BidderHomePage() {
   const [activeAuctions, setActiveAuctions] = useState<Auction[]>([]);
   const [myBids, setMyBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasFetchedRef = useRef(false);
+  const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
+
+    // Don't redirect if we're already on the bidder home page
+    if (router.asPath === '/home/bidder') {
+      // Only fetch data if we haven't fetched yet, or if user changed
+      const currentUserId = user?.id || null;
+      const userChanged = lastUserIdRef.current !== currentUserId;
+      
+      if (user && userProfile?.user_role !== 'seller') {
+        if (!hasFetchedRef.current || userChanged) {
+          fetchBidderData();
+          hasFetchedRef.current = true;
+          lastUserIdRef.current = currentUserId;
+        }
+      }
+      return;
+    }
 
     if (!user) {
       router.push("/auth/login");
@@ -67,9 +86,17 @@ export default function BidderHomePage() {
       return;
     }
 
-    fetchBidderData();
+    // Only fetch on initial load or user change
+    const currentUserId = user?.id || null;
+    const userChanged = lastUserIdRef.current !== currentUserId;
+    
+    if (!hasFetchedRef.current || userChanged) {
+      fetchBidderData();
+      hasFetchedRef.current = true;
+      lastUserIdRef.current = currentUserId;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, userProfile, authLoading, router]);
+  }, [user, userProfile, authLoading]);
 
   const fetchBidderData = async () => {
     if (!user) return;
@@ -168,14 +195,7 @@ export default function BidderHomePage() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              Loading your bidder homepage...
-            </p>
-          </div>
-        </div>
+        <Loading message="Loading your bidder homepage..." fullScreen={false} size="md" />
       </div>
     );
   }

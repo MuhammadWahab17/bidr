@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,6 +8,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import BidcoinSummaryCard from '../../components/BidcoinSummaryCard';
 import Image from '../../components/AppImage';
+import Loading from '../../components/ui/Loading';
 
 interface SellerAuction {
   id: string;
@@ -40,9 +41,27 @@ export default function SellerHomePage() {
   });
   const [activeAuctions, setActiveAuctions] = useState<SellerAuction[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasFetchedRef = useRef(false);
+  const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
+
+    // Don't redirect if we're already on the seller home page
+    if (router.asPath === '/home/seller') {
+      // Only fetch data if we haven't fetched yet, or if user changed
+      const currentUserId = user?.id || null;
+      const userChanged = lastUserIdRef.current !== currentUserId;
+      
+      if (user && userProfile?.user_role === 'seller') {
+        if (!hasFetchedRef.current || userChanged) {
+          fetchSellerData();
+          hasFetchedRef.current = true;
+          lastUserIdRef.current = currentUserId;
+        }
+      }
+      return;
+    }
 
     if (!user) {
       router.push('/auth/login');
@@ -54,8 +73,16 @@ export default function SellerHomePage() {
       return;
     }
 
-    fetchSellerData();
-  }, [user, userProfile, authLoading, router]);
+    // Only fetch on initial load or user change
+    const currentUserId = user?.id || null;
+    const userChanged = lastUserIdRef.current !== currentUserId;
+    
+    if (!hasFetchedRef.current || userChanged) {
+      fetchSellerData();
+      hasFetchedRef.current = true;
+      lastUserIdRef.current = currentUserId;
+    }
+  }, [user, userProfile, authLoading]);
 
   const fetchSellerData = async () => {
     if (!user) return;
@@ -72,9 +99,11 @@ export default function SellerHomePage() {
       const active = allAuctions.filter((a: SellerAuction) => a.status === 'active');
       const completed = allAuctions.filter((a: SellerAuction) => a.status === 'ended' || a.status === 'completed');
       
-      // Calculate revenue from completed auctions
+      // Calculate revenue from completed auctions (95% after 5% platform fee)
       const revenue = completed.reduce((sum: number, auction: SellerAuction) => {
-        return sum + (auction.current_price || 0);
+        const winningBid = auction.current_price || 0;
+        const sellerAmount = winningBid * 0.95; // Seller receives 95% after platform fee
+        return sum + sellerAmount;
       }, 0);
 
       // Get bid counts for active auctions
@@ -127,12 +156,7 @@ export default function SellerHomePage() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading your seller homepage...</p>
-          </div>
-        </div>
+        <Loading message="Loading your seller homepage..." fullScreen={false} size="md" />
       </div>
     );
   }
@@ -176,7 +200,7 @@ export default function SellerHomePage() {
               <div className="flex items-center justify-between mb-2">
                 <Icon name="DollarSign" size={20} className="text-warning" />
                 <span className="text-2xl font-bold text-foreground">
-                  ${stats.totalRevenue.toFixed(0)}
+                  ${stats.totalRevenue.toFixed(2)}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">Total Revenue</p>
