@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import Header from '../../components/ui/Header';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
+import Loading from '../../components/ui/Loading';
 
 interface StripeConnectStatus {
   isConnected: boolean;
@@ -25,19 +26,45 @@ export default function StripeConnectPage() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [statusLoading, setStatusLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
+  const lastUserIdRef = useRef<string | null>(null);
 
   const { success, refresh } = router.query;
 
   useEffect(() => {
-    if (!loading && (!user || userProfile?.user_role !== 'seller')) {
+    if (loading) return;
+
+    // Don't redirect if we're already on the stripe-connect page
+    if (router.asPath === '/seller/stripe-connect') {
+      // Only fetch data if we haven't fetched yet, or if user changed
+      const currentUserId = user?.id || null;
+      const userChanged = lastUserIdRef.current !== currentUserId;
+      
+      if (user && userProfile?.user_role === 'seller') {
+        if (!hasFetchedRef.current || userChanged) {
+          checkStripeStatus();
+          hasFetchedRef.current = true;
+          lastUserIdRef.current = currentUserId;
+        }
+      }
+      return;
+    }
+
+    if (!user || userProfile?.user_role !== 'seller') {
       router.push('/auth/login');
       return;
     }
 
-    if (user && userProfile?.user_role === 'seller') {
+    // Only fetch on initial load or user change
+    const currentUserId = user?.id || null;
+    const userChanged = lastUserIdRef.current !== currentUserId;
+    
+    if (!hasFetchedRef.current || userChanged) {
       checkStripeStatus();
+      hasFetchedRef.current = true;
+      lastUserIdRef.current = currentUserId;
     }
-  }, [user, userProfile, loading, router]);
+  }, [user, userProfile, loading]);
 
   useEffect(() => {
     // Handle return from Stripe onboarding
@@ -101,12 +128,7 @@ export default function StripeConnectPage() {
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-96">
-            <div className="text-center">
-              <div className="animate-spin h-12 w-12 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-              <h2 className="text-xl font-medium text-foreground">Loading...</h2>
-            </div>
-          </div>
+          <Loading message="Loading Stripe connection..." fullScreen={false} size="md" />
         </main>
       </div>
     );
